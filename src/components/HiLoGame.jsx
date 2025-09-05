@@ -63,6 +63,35 @@ export default function HiLoGame() {
       setTimeout(() => setShowConfetti(false), 3000)
     }
   }, [gameState])
+  
+  // Initialize with some sample data for demo purposes
+  useEffect(() => {
+    // Add some initial sample data to show off the DSA features
+    if (performanceAnalytics.getAnalytics().totalGames === 0) {
+      // Sample data for demonstration
+      const sampleGuesses = [50, 25, 37, 31, 34, 35];
+      sampleGuesses.forEach((guess, index) => {
+        performanceAnalytics.recordGuess(guess, 35, index + 1, 1000);
+      });
+      
+      performanceAnalytics.recordSession({
+        target: 35,
+        attempts: 6,
+        completed: true,
+        timeElapsed: 6000,
+        guesses: sampleGuesses
+      });
+      
+      // Add more sample sessions
+      performanceAnalytics.recordSession({
+        target: 72,
+        attempts: 4,
+        completed: true,
+        timeElapsed: 4500,
+        guesses: [50, 75, 70, 72]
+      });
+    }
+  }, []);
 
   // Advanced DSA functions with memoization
   const memoizedAIAnalysis = dpUtils.memoize((guesses, range) => {

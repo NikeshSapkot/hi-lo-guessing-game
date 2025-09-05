@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BarChart3, Brain, TrendingUp, Target, Cpu, Zap, 
   GitBranch, Activity, Layers, Sparkles, ChevronRight,
-  Award, Clock, LineChart, PieChart, Radar
+  Award, Clock, Radar
 } from 'lucide-react';
 
 const AdvancedAnalytics = ({ 
@@ -15,8 +15,6 @@ const AdvancedAnalytics = ({
   performanceMetrics 
 }) => {
   const [activeTab, setActiveTab] = useState('overview');
-  const [animationData, setAnimationData] = useState({});
-  const canvasRef = useRef(null);
 
   // Visualize BST structure
   const renderBSTVisualization = (bstData) => {
