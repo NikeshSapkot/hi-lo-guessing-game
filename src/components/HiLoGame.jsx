@@ -1,6 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Play, RotateCcw, Trophy, Target, TrendingUp, TrendingDown, CheckCircle, X, Zap } from 'lucide-react'
+import { Play, RotateCcw, Trophy, Target, TrendingUp, TrendingDown, CheckCircle, X, Zap, Brain, Activity } from 'lucide-react'
+import { 
+  AIStrategyEngine, 
+  GameTheoryAnalyzer, 
+  PerformanceAnalytics,
+  dpUtils
+} from '../lib/gameAlgorithms'
+import AdvancedAnalytics from './AdvancedAnalytics'
 
 const confettiVariants = {
   hidden: { opacity: 0, scale: 0, y: 0 },
@@ -39,6 +46,17 @@ export default function HiLoGame() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [lastGuessType, setLastGuessType] = useState('')
   
+  // Advanced DSA and AI state
+  const [showAnalytics, setShowAnalytics] = useState(false)
+  const [aiEngine] = useState(() => new AIStrategyEngine())
+  const [gameTheoryAnalyzer] = useState(() => new GameTheoryAnalyzer())
+  const [performanceAnalytics] = useState(() => new PerformanceAnalytics())
+  const [aiRecommendations, setAiRecommendations] = useState([])
+  const [currentRange, setCurrentRange] = useState({ low: 1, high: 100 })
+  const [gameSessionStart, setGameSessionStart] = useState(null)
+  const [showAIHints, setShowAIHints] = useState(false)
+  const [difficultyMode, setDifficultyMode] = useState('normal') // easy, normal, hard, expert
+  
   useEffect(() => {
     if (gameState === 'won') {
       setShowConfetti(true)
@@ -46,24 +64,78 @@ export default function HiLoGame() {
     }
   }, [gameState])
 
+  // Advanced DSA functions with memoization
+  const memoizedAIAnalysis = dpUtils.memoize((guesses, range) => {
+    if (!guesses || guesses.length === 0) return [];
+    
+    const previousGuesses = guesses.map(g => ({
+      guess: g.guess,
+      feedback: g.guess < targetNumber ? 'low' : g.guess > targetNumber ? 'high' : 'correct'
+    }));
+    
+    return [
+      aiEngine.binarySearchStrategy(range.low, range.high, previousGuesses),
+      aiEngine.monteCarloStrategy(range.low, range.high, previousGuesses, 1000),
+      aiEngine.bayesianStrategy(range.low, range.high, previousGuesses),
+      aiEngine.adaptivePatternStrategy(range.low, range.high, previousGuesses)
+    ].sort((a, b) => b.confidence - a.confidence);
+  });
+
+  const updateAIRecommendations = () => {
+    if (gameState === 'playing' && guessHistory.length > 0) {
+      const recommendations = memoizedAIAnalysis(guessHistory, currentRange);
+      setAiRecommendations(recommendations);
+    }
+  };
+
+  const updateGameRange = (guess, isCorrect, isHigh) => {
+    if (isCorrect) return;
+    
+    setCurrentRange(prev => {
+      if (isHigh) {
+        return { low: prev.low, high: guess - 1 };
+      } else {
+        return { low: guess + 1, high: prev.high };
+      }
+    });
+  };
+
+  // Dynamic difficulty adjustment using DP
+  const getDynamicDifficulty = () => {
+    const analytics = performanceAnalytics.getAnalytics();
+    const efficiency = analytics.averageAttempts;
+    
+    if (efficiency <= 4) return { range: [1, 1000], name: 'Expert Mode' };
+    if (efficiency <= 6) return { range: [1, 500], name: 'Hard Mode' };
+    if (efficiency <= 8) return { range: [1, 200], name: 'Medium Mode' };
+    return { range: [1, 100], name: 'Normal Mode' };
+  };
+
   const startNewGame = () => {
-    const newTarget = Math.floor(Math.random() * 100) + 1
-    setTargetNumber(newTarget)
-    setGameState('playing')
-    setCurrentGuess('')
-    setGuessCount(0)
-    setFeedback('I\'m thinking of a number between 1 and 100. Can you guess it?')
-    setGuessHistory([])
-    setShowConfetti(false)
-    setLastGuessType('')
-  }
+    const difficulty = getDynamicDifficulty();
+    const [min, max] = difficulty.range;
+    const newTarget = Math.floor(Math.random() * (max - min + 1)) + min;
+    
+    setTargetNumber(newTarget);
+    setGameState('playing');
+    setCurrentGuess('');
+    setGuessCount(0);
+    setFeedback(`🎯 I'm thinking of a number between ${min} and ${max}. ${difficulty.name} activated!`);
+    setGuessHistory([]);
+    setShowConfetti(false);
+    setLastGuessType('');
+    setCurrentRange({ low: min, high: max });
+    setGameSessionStart(Date.now());
+    setAiRecommendations([]);
+  };
 
   const makeGuess = () => {
     const guess = parseInt(currentGuess)
+    const timeToGuess = gameSessionStart ? Date.now() - gameSessionStart : 0
     
     // Validate input
     if (isNaN(guess)) {
-      setFeedback('Please enter a valid number!')
+      setFeedback('🚫 Please enter a valid number!')
       setLastGuessType('error')
       return
     }
@@ -73,34 +145,73 @@ export default function HiLoGame() {
       setGameState('quit')
       setFeedback(`You chose to quit! The number was ${targetNumber}.`)
       setLastGuessType('quit')
+      
+      // Record session data
+      performanceAnalytics.recordSession({
+        target: targetNumber,
+        attempts: guessCount,
+        completed: false,
+        timeElapsed: timeToGuess,
+        guesses: guessHistory.map(h => h.guess)
+      })
       return
     }
 
-    // Check if guess is in valid range
-    if (guess < 1 || guess > 100) {
-      setFeedback('Please enter a number between 1 and 100 (or 0 to quit).')
+    // Dynamic range validation based on current difficulty
+    if (guess < currentRange.low || guess > currentRange.high) {
+      setFeedback(`⚡ Please enter a number between ${currentRange.low} and ${currentRange.high} (or 0 to quit).`)
       setLastGuessType('error')
       return
     }
 
     const newCount = guessCount + 1
+    const newHistory = [...guessHistory, { guess, count: newCount, timestamp: Date.now() }]
     setGuessCount(newCount)
-    setGuessHistory([...guessHistory, { guess, count: newCount }])
+    setGuessHistory(newHistory)
+    
+    // Record guess in BST and other data structures
+    performanceAnalytics.recordGuess(guess, targetNumber, newCount, timeToGuess)
 
     // Check if guess is correct
     if (guess === targetNumber) {
       setGameState('won')
       setFeedback(`🎉 Incredible! You guessed ${targetNumber} correctly in ${newCount} ${newCount === 1 ? 'guess' : 'guesses'}!`)
       setLastGuessType('correct')
-    } else if (guess < targetNumber) {
-      setFeedback(`Too low! Try a higher number. (Guess #${newCount})`)
-      setLastGuessType('low')
+      
+      // Record successful session
+      performanceAnalytics.recordSession({
+        target: targetNumber,
+        attempts: newCount,
+        completed: true,
+        timeElapsed: timeToGuess,
+        guesses: newHistory.map(h => h.guess)
+      })
+      
+      // Get optimal strategy analysis
+      const optimalStrategy = gameTheoryAnalyzer.getOptimalStrategy(currentRange.low, currentRange.high)
+      console.log('Game Theory Analysis:', optimalStrategy)
+      
     } else {
-      setFeedback(`Too high! Try a lower number. (Guess #${newCount})`)
-      setLastGuessType('high')
+      const isHigh = guess > targetNumber
+      const isLow = guess < targetNumber
+      
+      // Update game range using DSA principles
+      updateGameRange(guess, false, isHigh)
+      
+      if (isLow) {
+        setFeedback(`📈 Too low! Try a higher number. (Guess #${newCount}) | Range: ${guess + 1}-${currentRange.high}`)
+        setLastGuessType('low')
+      } else {
+        setFeedback(`📉 Too high! Try a lower number. (Guess #${newCount}) | Range: ${currentRange.low}-${guess - 1}`)
+        setLastGuessType('high')
+      }
+      
+      // Update AI recommendations using advanced algorithms
+      setTimeout(() => updateAIRecommendations(), 100)
     }
 
     setCurrentGuess('')
+    setGameSessionStart(Date.now()) // Reset timer for next guess
   }
 
   const handleKeyPress = (e) => {
@@ -536,33 +647,103 @@ export default function HiLoGame() {
                   )}
                 </AnimatePresence>
 
+                {/* AI Recommendations Display */}
+                <AnimatePresence>
+                  {gameState === 'playing' && aiRecommendations.length > 0 && showAIHints && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -30 }}
+                      className="glass p-6"
+                      style={{
+                        borderRadius: '1rem',
+                        border: '1px solid rgba(34, 211, 238, 0.3)',
+                        background: 'rgba(34, 211, 238, 0.1)'
+                      }}
+                    >
+                      <h4 className="flex items-center gap-2 mb-4" style={{ fontWeight: 600, color: 'rgba(34, 211, 238, 1)' }}>
+                        <Brain size={16} />
+                        AI Strategy Recommendations
+                      </h4>
+                      <div className="space-y-3">
+                        {aiRecommendations.slice(0, 3).map((rec, index) => (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="flex items-center justify-between p-3 rounded-lg"
+                            style={{ background: 'rgba(255, 255, 255, 0.05)' }}
+                          >
+                            <div>
+                              <span className="text-white font-semibold capitalize">
+                                {rec.name?.replace(/([A-Z])/g, ' $1').trim()}: 
+                              </span>
+                              <span className="text-cyan-300 text-lg font-bold">{rec.guess}</span>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-xs text-white/60">Confidence</div>
+                              <div className="text-sm font-semibold text-cyan-400">
+                                {(rec.confidence * 100).toFixed(0)}%
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 {/* Action Buttons */}
                 <div className="flex justify-center gap-4">
                   <AnimatePresence mode="wait">
                     {gameState === 'waiting' && (
-                      <motion.button
-                        key="start"
+                      <motion.div
+                        key="start-actions"
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
-                        whileHover={{ scale: 1.05, y: -2 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={startNewGame}
-                        className="btn-success flex items-center gap-2"
-                        style={{
-                          padding: '1rem 2rem',
-                          background: 'linear-gradient(135deg, #10b981, #34d399)',
-                          color: 'white',
-                          fontWeight: 600,
-                          borderRadius: '1rem',
-                          border: 'none',
-                          cursor: 'pointer',
-                          boxShadow: '0 10px 20px rgba(0, 0, 0, 0.1)'
-                        }}
+                        className="flex gap-4"
                       >
-                        <Play size={20} />
-                        <span>Start Adventure</span>
-                      </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.05, y: -2 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={startNewGame}
+                          className="btn-success flex items-center gap-2"
+                          style={{
+                            padding: '1rem 2rem',
+                            background: 'linear-gradient(135deg, #10b981, #34d399)',
+                            color: 'white',
+                            fontWeight: 600,
+                            borderRadius: '1rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            boxShadow: '0 10px 20px rgba(0, 0, 0, 0.1)'
+                          }}
+                        >
+                          <Play size={20} />
+                          <span>Start Adventure</span>
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.05, y: -2 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setShowAnalytics(!showAnalytics)}
+                          className="glass flex items-center gap-2"
+                          style={{
+                            padding: '1rem 2rem',
+                            background: 'rgba(168, 85, 247, 0.2)',
+                            border: '1px solid rgba(168, 85, 247, 0.4)',
+                            color: 'white',
+                            fontWeight: 600,
+                            borderRadius: '1rem',
+                            cursor: 'pointer',
+                            boxShadow: '0 10px 20px rgba(0, 0, 0, 0.1)'
+                          }}
+                        >
+                          <Activity size={20} />
+                          <span>DSA Analytics</span>
+                        </motion.button>
+                      </motion.div>
                     )}
 
                     {(gameState === 'won' || gameState === 'quit') && (
@@ -615,35 +796,60 @@ export default function HiLoGame() {
                     )}
 
                     {gameState === 'playing' && (
-                      <motion.button
-                        key="quit"
+                      <motion.div
+                        key="playing-actions"
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
-                        whileHover={{ scale: 1.05, y: -2 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => {
-                          setGameState('quit')
-                          setFeedback(`Game ended! The number was ${targetNumber}.`)
-                          setLastGuessType('quit')
-                        }}
-                        style={{
-                          padding: '0.75rem 1.5rem',
-                          background: 'linear-gradient(135deg, #ef4444, #f43f5e)',
-                          color: 'white',
-                          fontWeight: 600,
-                          borderRadius: '1rem',
-                          border: 'none',
-                          cursor: 'pointer',
-                          boxShadow: '0 10px 20px rgba(0, 0, 0, 0.1)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem'
-                        }}
+                        className="flex gap-3"
                       >
-                        <X size={16} />
-                        <span>Quit Game</span>
-                      </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.05, y: -2 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setShowAIHints(!showAIHints)}
+                          className="glass flex items-center gap-2"
+                          style={{
+                            padding: '0.75rem 1.5rem',
+                            background: showAIHints 
+                              ? 'linear-gradient(135deg, #22d3ee, #06b6d4)'
+                              : 'rgba(34, 211, 238, 0.2)',
+                            border: '1px solid rgba(34, 211, 238, 0.4)',
+                            color: 'white',
+                            fontWeight: 600,
+                            borderRadius: '1rem',
+                            cursor: 'pointer',
+                            boxShadow: '0 10px 20px rgba(0, 0, 0, 0.1)'
+                          }}
+                        >
+                          <Brain size={16} />
+                          <span>AI Hints</span>
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.05, y: -2 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => {
+                            setGameState('quit')
+                            setFeedback(`Game ended! The number was ${targetNumber}.`)
+                            setLastGuessType('quit')
+                          }}
+                          style={{
+                            padding: '0.75rem 1.5rem',
+                            background: 'linear-gradient(135deg, #ef4444, #f43f5e)',
+                            color: 'white',
+                            fontWeight: 600,
+                            borderRadius: '1rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            boxShadow: '0 10px 20px rgba(0, 0, 0, 0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                          }}
+                        >
+                          <X size={16} />
+                          <span>Quit</span>
+                        </motion.button>
+                      </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
@@ -652,6 +858,35 @@ export default function HiLoGame() {
           </motion.div>
         </div>
       </div>
+      
+      {/* Advanced DSA Analytics Dashboard */}
+      <AnimatePresence>
+        {showAnalytics && (
+          <motion.div
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="mt-16"
+          >
+            <AdvancedAnalytics
+              gameHistory={guessHistory}
+              currentGuess={currentGuess}
+              analytics={{
+                bstData: performanceAnalytics.bst.inorderTraversal(),
+                range: currentRange,
+                gameState
+              }}
+              aiRecommendations={aiRecommendations}
+              patternAnalysis={{
+                patterns: guessHistory.length > 1 ? aiEngine.analyzeGuessPatterns(guessHistory) : null,
+                difficulty: getDynamicDifficulty()
+              }}
+              performanceMetrics={performanceAnalytics.getAnalytics()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
