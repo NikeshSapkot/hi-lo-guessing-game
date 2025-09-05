@@ -113,7 +113,7 @@ export default function Documentation() {
       </motion.div>
       
       {/* Cards Grid */}
-      <div className="grid grid-cols-1 gap-16" style={{ '@media (min-width: 1280px)': { gridTemplateColumns: 'repeat(3, 1fr)', gap: '3rem' }, justifyItems: 'center', marginBottom: '4rem' }}>
+      <div className="documentation-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '3rem', justifyItems: 'center', marginBottom: '4rem', padding: '2rem' }}>
         {/* Java Requirements Card */}
         <motion.div
           custom={0}

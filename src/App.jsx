@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import Documentation from './components/Documentation'
-import HiLoGame from './components/HiLoGame'
+import SimpleHiLoGame from './components/SimpleHiLoGame'
 import { GamepadIcon, Coffee } from 'lucide-react'
 
 // Animated background component
@@ -211,7 +211,7 @@ function App() {
           viewport={{ once: true }}
           className="text-center my-8"
         >
-          <HiLoGame />
+          <SimpleHiLoGame />
         </motion.section>
       </main>
 
@@ -234,7 +234,7 @@ function App() {
             <h3 className="gradient-text mb-6" style={{ fontSize: '1.5rem', fontWeight: 700 }}>
               Built by
             </h3>
-            <div className="flex flex-col gap-6 items-center" style={{ '@media (min-width: 640px)': { flexDirection: 'row', justifyContent: 'center' } }}>
+            <div className="flex flex-col gap-6 items-center" style={{ flexDirection: 'row', justifyContent: 'center' }}>
               <motion.div
                 className="text-center"
                 whileHover={{ scale: 1.1, y: -5 }}
@@ -255,9 +255,7 @@ function App() {
                   width: '4px', 
                   height: '4px', 
                   background: 'linear-gradient(135deg, #8b5cf6, #06b6d4)',
-                  borderRadius: '50%',
-                  display: 'none',
-                  '@media (min-width: 640px)': { display: 'block' }
+                  borderRadius: '50%'
                 }}
                 animate={{ rotate: [0, 180, 360] }}
                 transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
