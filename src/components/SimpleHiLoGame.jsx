@@ -273,37 +273,175 @@ export default function SimpleHiLoGame() {
             >
               Make Guess
             </button>
+
+            {/* Live DSA Analytics During Gameplay */}
+            {currentGameAnalytics && currentGameAnalytics.dsaOperations.bstInsertions > 0 && (
+              <div className="glass p-4 mt-4" style={{
+                borderRadius: '1rem',
+                border: '1px solid rgba(34, 211, 238, 0.3)',
+                background: 'rgba(34, 211, 238, 0.1)',
+                width: '100%',
+                maxWidth: '400px'
+              }}>
+                <h5 className="text-white font-semibold mb-3 flex items-center gap-2" style={{ fontSize: '0.9rem' }}>
+                  <BarChart3 size={16} />
+                  Live DSA Analysis
+                </h5>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-cyan-300">
+                      {currentGameAnalytics.dsaOperations.bstInsertions}
+                    </div>
+                    <div className="text-xs text-white/70">BST Inserts</div>
+                    <div className="text-xs text-cyan-400">O(log n)</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-purple-300">
+                      {currentGameAnalytics.dsaOperations.algorithmCalls}
+                    </div>
+                    <div className="text-xs text-white/70">AI Calls</div>
+                    <div className="text-xs text-purple-400">O(log n)</div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.75rem' }}>
+                  <div>
+                    <div className="text-white/60">Memory:</div>
+                    <div className="text-green-400 font-semibold">
+                      {currentGameAnalytics.guesses.length * 32}B
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-white/60">Complexity:</div>
+                    <div className="text-yellow-400 font-semibold">
+                      O(n) space
+                    </div>
+                  </div>
+                </div>
+
+                {/* Latest Operation Performance */}
+                {currentGameAnalytics.timeComplexity.length > 0 && (
+                  <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div className="text-xs text-white/60 mb-1">Last Operation:</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                      <span className="text-white">
+                        {currentGameAnalytics.timeComplexity[currentGameAnalytics.timeComplexity.length - 1]?.operation.replace(/_/g, ' ')}
+                      </span>
+                      <span className="text-cyan-400">
+                        {currentGameAnalytics.timeComplexity[currentGameAnalytics.timeComplexity.length - 1]?.actualTime.toFixed(3)}ms
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Guess History */}
+        {/* Guess History with Analytics */}
         {guessHistory.length > 0 && (
-          <div className="glass p-4 mb-6" style={{
-            borderRadius: '1rem',
-            border: '1px solid rgba(255, 255, 255, 0.1)'
-          }}>
-            <h4 style={{ fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: '1rem' }}>
-              Your Guesses:
-            </h4>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-              {guessHistory.map((item, index) => (
-                <div
-                  key={index}
-                  className="glass"
-                  style={{
-                    background: 'rgba(168, 85, 247, 0.2)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    color: 'white',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '50px',
-                    fontSize: '0.875rem',
-                    fontWeight: 500
-                  }}
-                >
-                  #{item.count}: {item.guess}
-                </div>
-              ))}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+            {/* Guess History */}
+            <div className="glass p-4" style={{
+              borderRadius: '1rem',
+              border: '1px solid rgba(255, 255, 255, 0.1)'
+            }}>
+              <h4 style={{ fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: '1rem' }}>
+                Your Guesses:
+              </h4>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                {guessHistory.map((item, index) => (
+                  <div
+                    key={index}
+                    className="glass"
+                    style={{
+                      background: 'rgba(168, 85, 247, 0.2)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      color: 'white',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '50px',
+                      fontSize: '0.875rem',
+                      fontWeight: 500
+                    }}
+                  >
+                    #{item.count}: {item.guess}
+                  </div>
+                ))}
+              </div>
             </div>
+
+            {/* Comprehensive Live Analytics */}
+            {currentGameAnalytics && currentGameAnalytics.timeComplexity.length > 0 && (
+              <div className="glass p-4" style={{
+                borderRadius: '1rem',
+                border: '1px solid rgba(34, 211, 238, 0.3)',
+                background: 'rgba(34, 211, 238, 0.1)'
+              }}>
+                <h4 className="text-white font-semibold mb-3 flex items-center gap-2" style={{ fontSize: '1rem' }}>
+                  <Activity size={18} />
+                  Real-time DSA Performance
+                </h4>
+                
+                {/* Performance Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-cyan-300">
+                      {((Math.log2(100) / Math.max(guessCount, 1)) * 100).toFixed(0)}%
+                    </div>
+                    <div className="text-xs text-white/70">Efficiency vs Optimal</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-purple-300">
+                      {currentGameAnalytics.timeComplexity.reduce((sum, op) => sum + op.actualTime, 0).toFixed(2)}
+                    </div>
+                    <div className="text-xs text-white/70">Total Time (ms)</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-green-300">
+                      {(currentGameAnalytics.guesses.length * 32 + currentGameAnalytics.dsaOperations.bstInsertions * 64)}
+                    </div>
+                    <div className="text-xs text-white/70">Memory (bytes)</div>
+                  </div>
+                </div>
+
+                {/* Latest Operations */}
+                <div>
+                  <h5 className="text-white/80 font-semibold mb-2" style={{ fontSize: '0.85rem' }}>Recent Operations:</h5>
+                  <div className="space-y-2">
+                    {currentGameAnalytics.timeComplexity.slice(-3).map((op, index) => (
+                      <div key={index} className="flex justify-between items-center text-sm">
+                        <span className="text-white/70">
+                          {op.operation.replace(/_/g, ' ')}
+                        </span>
+                        <div className="text-right">
+                          <div className="text-cyan-400 font-mono text-xs">
+                            {op.complexity}
+                          </div>
+                          <div className="text-white/60 text-xs">
+                            {op.actualTime.toFixed(3)}ms
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Algorithm Comparison */}
+                <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                    <div>
+                      <div className="text-white/60">Your Strategy:</div>
+                      <div className="text-yellow-400 font-semibold">{guessCount} attempts</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-white/60">Binary Search:</div>
+                      <div className="text-green-400 font-semibold">{Math.ceil(Math.log2(100))} optimal</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
