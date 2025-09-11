@@ -3,7 +3,7 @@ import Documentation from './components/Documentation'
 import SimpleHiLoGame from './components/SimpleHiLoGame'
 import { GamepadIcon, Coffee } from 'lucide-react'
 
-// Animated background component
+// Minimal animated background component
 function AnimatedBackground() {
   return (
     <div className="fixed" style={{
@@ -12,97 +12,40 @@ function AnimatedBackground() {
       right: 0,
       bottom: 0,
       zIndex: -1,
-      background: 'linear-gradient(135deg, #1e1b4b 0%, #581c87 25%, #be185d 50%, #1e1b4b 100%)',
+      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
       overflow: 'hidden'
     }}>
-      {/* Floating orbs */}
-      <motion.div
-        className="absolute opacity-70"
-        style={{
-          top: '10%',
-          left: '10%',
-          width: '300px',
-          height: '300px',
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.4), rgba(219, 39, 119, 0.4))',
-          filter: 'blur(40px)'
-        }}
-        animate={{
-          x: [0, 150, 0],
-          y: [0, -100, 0],
-          scale: [1, 1.2, 1]
-        }}
-        transition={{
-          duration: 15,
-          repeat: Infinity,
-          ease: 'easeInOut'
-        }}
-      />
+      {/* Subtle geometric patterns */}
+      <div className="absolute inset-0">
+        <svg width="100%" height="100%" opacity="0.03">
+          <defs>
+            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#ffffff" strokeWidth="1"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" />
+        </svg>
+      </div>
       
+      {/* Single subtle floating orb */}
       <motion.div
-        className="absolute opacity-60"
+        className="absolute opacity-20"
         style={{
-          top: '60%',
-          right: '10%',
-          width: '400px',
-          height: '400px',
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.4), rgba(59, 130, 246, 0.4))',
-          filter: 'blur(50px)'
-        }}
-        animate={{
-          x: [0, -120, 0],
-          y: [0, 80, 0],
-          scale: [1, 0.8, 1]
-        }}
-        transition={{
-          duration: 18,
-          repeat: Infinity,
-          ease: 'easeInOut'
-        }}
-      />
-      
-      <motion.div
-        className="absolute opacity-50"
-        style={{
-          bottom: '20%',
-          left: '30%',
-          width: '250px',
-          height: '250px',
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(34, 197, 94, 0.3))',
-          filter: 'blur(35px)'
-        }}
-        animate={{
-          x: [0, 100, 0],
-          y: [0, -60, 0],
-          rotate: [0, 180, 360]
-        }}
-        transition={{
-          duration: 20,
-          repeat: Infinity,
-          ease: 'easeInOut'
-        }}
-      />
-      
-      <motion.div
-        className="absolute opacity-40"
-        style={{
-          top: '40%',
-          left: '70%',
+          top: '30%',
+          right: '20%',
           width: '200px',
           height: '200px',
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(251, 191, 36, 0.3))',
-          filter: 'blur(30px)'
+          background: 'radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%)',
+          filter: 'blur(20px)'
         }}
         animate={{
-          x: [0, -80, 0],
-          y: [0, 100, 0],
-          scale: [1, 1.1, 1]
+          x: [0, 30, 0],
+          y: [0, -20, 0],
+          opacity: [0.1, 0.2, 0.1]
         }}
         transition={{
-          duration: 12,
+          duration: 8,
           repeat: Infinity,
           ease: 'easeInOut'
         }}
